@@ -1,0 +1,74 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check version matches tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME.TrimStart('v')
+          $src = Select-String -Path src/NoFocusLoss.c -Pattern '#define NFL_VERSION "(.+)"'
+          $ver = $src.Matches[0].Groups[1].Value
+          if ($ver -ne $tag) { throw "Tag v$tag does not match NFL_VERSION $ver in src/NoFocusLoss.c" }
+
+      - name: Build
+        shell: cmd
+        run: build.bat
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $name = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME } else { "dev-$($env:GITHUB_SHA.Substring(0,7))" }
+          $zip = "NoFocusLoss-MoonSweepers-$name.zip"
+          Compress-Archive -Path dist/version.dll, dist/NoFocusLoss.ini, dist/README.md -DestinationPath $zip
+          "ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Get-FileHash dist/version.dll -Algorithm SHA256 | Format-List
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoFocusLoss-MoonSweepers
+          path: |
+            dist/version.dll
+            dist/NoFocusLoss.ini
+            dist/README.md
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Release notes = matching section of CHANGELOG.md
+          $ver = $env:GITHUB_REF_NAME.TrimStart('v')
+          $lines = Get-Content CHANGELOG.md
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($ver))\]").LineNumber
+          $notes = @()
+          if ($start) {
+            foreach ($l in $lines[$start..($lines.Count - 1)]) {
+              if ($l -match '^## \[' -or $l -match '^\[.+\]: ') { break }
+              $notes += $l
+            }
+          }
+          $hash = (Get-FileHash dist/version.dll -Algorithm SHA256).Hash
+          $notes += ''
+          $notes += '### Install'
+          $notes += 'Extract `version.dll` and `NoFocusLoss.ini` next to `MoonSweepers.exe`. Full guide: [README](https://github.com/${{ github.repository }}#installation)'
+          $notes += ''
+          $notes += "SHA-256 ``version.dll``: ``$hash``"
+          $notes -join "`n" | Out-File notes.md -Encoding utf8
+          gh release create $env:GITHUB_REF_NAME $env:ZIP --title "NoFocusLoss $env:GITHUB_REF_NAME" --notes-file notes.md --verify-tag

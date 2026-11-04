@@ -1,0 +1,63 @@
+name: Bug report
+description: The mod doesn't work, crashes, or behaves unexpectedly.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please attach your **NoFocusLoss.log** from the game folder. Without it, the problem is
+        almost impossible to diagnose.
+  - type: input
+    id: mod-version
+    attributes:
+      label: Mod version
+      placeholder: e.g. v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows 11
+        - Windows 10
+        - Linux (Proton)
+        - Steam Deck
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: display-mode
+    attributes:
+      label: Display mode
+      options:
+        - Windowed
+        - Borderless Fullscreen
+        - Exclusive Fullscreen
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        1. Started driving with cruise control
+        2. Alt-tabbed to Discord
+        3. Vehicle stopped anyway
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: NoFocusLoss.log
+      description: Paste the contents of `NoFocusLoss.log` from the game folder.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: ini
+    attributes:
+      label: NoFocusLoss.ini (if you changed it)
+      render: ini

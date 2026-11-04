@@ -9,3 +9,5 @@ dist/
 *.ilk
 *.log
 .vs/
+steam-guide.txt
+notes.md
