@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/logo.jpg" alt="NoFocusLoss logo" width="160">
+
 # NoFocusLoss
 
 **Keep driving while you alt-tab: a Moon Sweepers mod**
